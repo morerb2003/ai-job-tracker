@@ -1,5 +1,0 @@
-spring:
-  datasource:
-    url: jdbc:postgresql://localhost:5432/job_tracker
-    username: postgres
-    password: More@2525
