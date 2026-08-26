@@ -14,7 +14,7 @@ import {
   Mail,
 } from "lucide-react";
 
-import { loginUser } from "../api/authApi";
+import { useAuth } from "../context/AuthContext";
 
 const initialForm = {
   email: "",
@@ -23,33 +23,16 @@ const initialForm = {
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [form, setForm] = useState(initialForm);
   const [showPassword, setShowPassword] = useState(false);
 
   const loginMutation = useMutation({
-    mutationFn: loginUser,
-    onSuccess: (data) => {
-      // Store token in localStorage
-      if (data.accessToken) {
-        localStorage.setItem("accessToken", data.accessToken);
-      }
-      if (data.refreshToken) {
-        localStorage.setItem("refreshToken", data.refreshToken);
-      }
-      if (data.userId) {
-        localStorage.setItem(
-          "user",
-          JSON.stringify({
-            id: data.userId,
-            name: data.name,
-            email: data.email,
-            role: data.role,
-          })
-        );
-      }
+    mutationFn: (credentials) => login(credentials),
+    onSuccess: () => {
       setTimeout(() => {
         navigate("/");
-      }, 800);
+      }, 700);
     },
   });
 

@@ -21,8 +21,10 @@ import {
 import { Link } from "react-router-dom";
 
 import { getApiHealth } from "../api/healthApi";
+import { useAuth } from "../context/AuthContext";
 
 const HomePage = () => {
+  const { user, isAuthenticated, logout } = useAuth();
   const { data: healthData, error: healthError, isLoading: healthLoading } = useQuery({
     queryKey: ["api-health"],
     queryFn: getApiHealth,
@@ -141,21 +143,40 @@ const HomePage = () => {
             </a>
           </nav>
 
-          <div className="flex items-center gap-3">
-            <Link
-              to="/login"
-              className="rounded-lg px-4 py-2 text-sm font-medium text-zinc-300 transition hover:bg-zinc-900 hover:text-zinc-100"
-            >
-              Sign In
-            </Link>
-            <Link
-              to="/register"
-              className="flex items-center gap-1.5 rounded-lg bg-emerald-400 px-4 py-2 text-sm font-semibold text-zinc-950 shadow-md shadow-emerald-400/20 transition hover:bg-emerald-300 active:scale-95"
-            >
-              Get Started Free
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
+          {isAuthenticated ? (
+            <div className="flex items-center gap-3">
+              <div className="hidden sm:flex items-center gap-2 rounded-xl bg-zinc-900 border border-zinc-800 px-3.5 py-1.5 text-xs text-zinc-300">
+                <span className="h-2 w-2 rounded-full bg-emerald-400"></span>
+                <span className="font-semibold text-zinc-200">{user?.name || user?.email}</span>
+                <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 text-[10px] text-emerald-400 font-bold border border-emerald-500/20">
+                  {user?.role || "USER"}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={logout}
+                className="rounded-lg border border-zinc-800 bg-zinc-900/80 px-3.5 py-2 text-xs font-semibold text-zinc-300 hover:text-white hover:bg-zinc-800 transition"
+              >
+                Sign Out
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <Link
+                to="/login"
+                className="rounded-lg px-4 py-2 text-sm font-medium text-zinc-300 transition hover:bg-zinc-900 hover:text-zinc-100"
+              >
+                Sign In
+              </Link>
+              <Link
+                to="/register"
+                className="flex items-center gap-1.5 rounded-lg bg-emerald-400 px-4 py-2 text-sm font-semibold text-zinc-950 shadow-md shadow-emerald-400/20 transition hover:bg-emerald-300 active:scale-95"
+              >
+                Get Started Free
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          )}
         </div>
       </header>
 

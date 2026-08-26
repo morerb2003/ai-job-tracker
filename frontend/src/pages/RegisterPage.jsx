@@ -15,7 +15,7 @@ import {
   UserPlus,
 } from "lucide-react";
 
-import { registerUser } from "../api/authApi";
+import { useAuth } from "../context/AuthContext";
 
 const initialForm = {
   name: "",
@@ -25,32 +25,16 @@ const initialForm = {
 
 const RegisterPage = () => {
   const navigate = useNavigate();
+  const { register } = useAuth();
   const [form, setForm] = useState(initialForm);
   const [showPassword, setShowPassword] = useState(false);
 
   const registerMutation = useMutation({
-    mutationFn: registerUser,
-    onSuccess: (data) => {
-      if (data.accessToken) {
-        localStorage.setItem("accessToken", data.accessToken);
-      }
-      if (data.refreshToken) {
-        localStorage.setItem("refreshToken", data.refreshToken);
-      }
-      if (data.userId) {
-        localStorage.setItem(
-          "user",
-          JSON.stringify({
-            id: data.userId,
-            name: data.name,
-            email: data.email,
-            role: data.role,
-          })
-        );
-      }
+    mutationFn: (credentials) => register(credentials),
+    onSuccess: () => {
       setTimeout(() => {
         navigate("/");
-      }, 900);
+      }, 700);
     },
   });
 
