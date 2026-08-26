@@ -8,6 +8,8 @@ D:\Fullstack-Project\ai-job-tracker\backend\src\main\java\com\rohit\jobtracker\c
 D:\Fullstack-Project\ai-job-tracker\backend\src\main\java\com\rohit\jobtracker\config\CorsConfig.java
 D:\Fullstack-Project\ai-job-tracker\backend\src\main\java\com\rohit\jobtracker\config\SecurityConfig.java
 D:\Fullstack-Project\ai-job-tracker\backend\src\main\java\com\rohit\jobtracker\JobtrackerApplication.java
+D:\Fullstack-Project\ai-job-tracker\backend\src\main\java\com\rohit\jobtracker\security\CustomUserDetailsService.java
+D:\Fullstack-Project\ai-job-tracker\backend\src\main\java\com\rohit\jobtracker\security\JwtAuthenticationFilter.java
 D:\Fullstack-Project\ai-job-tracker\backend\src\main\java\com\rohit\jobtracker\security\JwtService.java
 D:\Fullstack-Project\ai-job-tracker\backend\src\main\java\com\rohit\jobtracker\user\User.java
 D:\Fullstack-Project\ai-job-tracker\backend\src\main\java\com\rohit\jobtracker\user\UserRepository.java
