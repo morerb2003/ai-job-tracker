@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.rohit.jobtracker.security.JwtService;
 import com.rohit.jobtracker.user.User;
 import com.rohit.jobtracker.user.UserRepository;
 
@@ -16,10 +17,15 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public AuthService(
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder,
+            JwtService jwtService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.jwtService = jwtService;
     }
 
     @Transactional
@@ -36,12 +42,15 @@ public class AuthService {
                 passwordEncoder.encode(request.password()));
 
         User savedUser = userRepository.save(user);
+        String token = jwtService.generateToken(savedUser);
 
         return new AuthResponse(
                 savedUser.getId(),
                 savedUser.getName(),
                 savedUser.getEmail(),
                 savedUser.getRole(),
+                token,
+                jwtService.getExpirationTime(),
                 "Registration successful");
     }
 
@@ -56,11 +65,15 @@ public class AuthService {
             throw invalidCredentials();
         }
 
+        String token = jwtService.generateToken(user);
+
         return new LoginResponse(
                 user.getId(),
                 user.getName(),
                 user.getEmail(),
                 user.getRole(),
+                token,
+                jwtService.getExpirationTime(),
                 "Login successful");
     }
 

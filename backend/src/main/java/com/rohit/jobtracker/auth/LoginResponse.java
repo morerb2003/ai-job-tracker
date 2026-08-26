@@ -9,6 +9,19 @@ public record LoginResponse(
         String name,
         String email,
         UserRole role,
+        String accessToken,
+        String tokenType,
+        long expiresIn,
         String message
 ) {
+    public LoginResponse(
+            UUID userId,
+            String name,
+            String email,
+            UserRole role,
+            String accessToken,
+            long expiresIn,
+            String message) {
+        this(userId, name, email, role, accessToken, "Bearer", expiresIn, message);
+    }
 }
