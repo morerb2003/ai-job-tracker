@@ -18,6 +18,7 @@ D:\Fullstack-Project\ai-job-tracker\backend\src\main\java\com\rohit\jobtracker\J
 D:\Fullstack-Project\ai-job-tracker\backend\src\main\java\com\rohit\jobtracker\security\CustomUserDetailsService.java
 D:\Fullstack-Project\ai-job-tracker\backend\src\main\java\com\rohit\jobtracker\security\JwtAuthenticationFilter.java
 D:\Fullstack-Project\ai-job-tracker\backend\src\main\java\com\rohit\jobtracker\security\JwtService.java
+D:\Fullstack-Project\ai-job-tracker\backend\src\main\java\com\rohit\jobtracker\user\AdminUserController.java
 D:\Fullstack-Project\ai-job-tracker\backend\src\main\java\com\rohit\jobtracker\user\User.java
 D:\Fullstack-Project\ai-job-tracker\backend\src\main\java\com\rohit\jobtracker\user\UserController.java
 D:\Fullstack-Project\ai-job-tracker\backend\src\main\java\com\rohit\jobtracker\user\UserProfileResponse.java
