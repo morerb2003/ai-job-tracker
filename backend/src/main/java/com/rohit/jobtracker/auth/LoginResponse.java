@@ -10,6 +10,7 @@ public record LoginResponse(
         String email,
         UserRole role,
         String accessToken,
+        String refreshToken,
         String tokenType,
         long expiresIn,
         String message
@@ -20,8 +21,9 @@ public record LoginResponse(
             String email,
             UserRole role,
             String accessToken,
+            String refreshToken,
             long expiresIn,
             String message) {
-        this(userId, name, email, role, accessToken, "Bearer", expiresIn, message);
+        this(userId, name, email, role, accessToken, refreshToken, "Bearer", expiresIn, message);
     }
 }

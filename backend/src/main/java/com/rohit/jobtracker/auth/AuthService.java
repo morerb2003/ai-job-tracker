@@ -18,14 +18,17 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final RefreshTokenService refreshTokenService;
 
     public AuthService(
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
-            JwtService jwtService) {
+            JwtService jwtService,
+            RefreshTokenService refreshTokenService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.refreshTokenService = refreshTokenService;
     }
 
     @Transactional
@@ -42,19 +45,21 @@ public class AuthService {
                 passwordEncoder.encode(request.password()));
 
         User savedUser = userRepository.save(user);
-        String token = jwtService.generateToken(savedUser);
+        String accessToken = jwtService.generateToken(savedUser);
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(savedUser);
 
         return new AuthResponse(
                 savedUser.getId(),
                 savedUser.getName(),
                 savedUser.getEmail(),
                 savedUser.getRole(),
-                token,
+                accessToken,
+                refreshToken.getToken(),
                 jwtService.getExpirationTime(),
                 "Registration successful");
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public LoginResponse login(LoginRequest request) {
         String email = normalizeEmail(request.email());
 
@@ -65,16 +70,31 @@ public class AuthService {
             throw invalidCredentials();
         }
 
-        String token = jwtService.generateToken(user);
+        String accessToken = jwtService.generateToken(user);
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
 
         return new LoginResponse(
                 user.getId(),
                 user.getName(),
                 user.getEmail(),
                 user.getRole(),
-                token,
+                accessToken,
+                refreshToken.getToken(),
                 jwtService.getExpirationTime(),
                 "Login successful");
+    }
+
+    @Transactional
+    public TokenRefreshResponse refreshToken(RefreshTokenRequest request) {
+        RefreshToken rotatedToken = refreshTokenService.rotateRefreshToken(request.refreshToken());
+        User user = rotatedToken.getUser();
+        String newAccessToken = jwtService.generateToken(user);
+
+        return new TokenRefreshResponse(
+                newAccessToken,
+                rotatedToken.getToken(),
+                jwtService.getExpirationTime(),
+                "Token refreshed successfully");
     }
 
     private ResponseStatusException invalidCredentials() {
