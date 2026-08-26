@@ -31,7 +31,7 @@ const LoginPage = () => {
     mutationFn: (credentials) => login(credentials),
     onSuccess: () => {
       setTimeout(() => {
-        navigate("/");
+        navigate("/dashboard");
       }, 700);
     },
   });

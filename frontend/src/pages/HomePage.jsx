@@ -209,19 +209,31 @@ const HomePage = () => {
 
             {/* CTA Group */}
             <div className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link
-                to="/register"
-                className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-xl bg-emerald-400 px-7 py-3.5 text-base font-semibold text-zinc-950 shadow-xl shadow-emerald-400/25 transition hover:bg-emerald-300 hover:shadow-emerald-400/40 active:scale-98"
-              >
-                Start Tracking Free
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-              <Link
-                to="/login"
-                className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/80 px-6 py-3.5 text-base font-medium text-zinc-200 transition hover:bg-zinc-800 hover:text-white"
-              >
-                Sign In to Dashboard
-              </Link>
+              {isAuthenticated ? (
+                <Link
+                  to="/dashboard"
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-xl bg-emerald-400 px-8 py-3.5 text-base font-semibold text-zinc-950 shadow-xl shadow-emerald-400/25 transition hover:bg-emerald-300 active:scale-98"
+                >
+                  Open Dashboard
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              ) : (
+                <>
+                  <Link
+                    to="/register"
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-xl bg-emerald-400 px-7 py-3.5 text-base font-semibold text-zinc-950 shadow-xl shadow-emerald-400/25 transition hover:bg-emerald-300 hover:shadow-emerald-400/40 active:scale-98"
+                  >
+                    Start Tracking Free
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                  <Link
+                    to="/login"
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/80 px-6 py-3.5 text-base font-medium text-zinc-200 transition hover:bg-zinc-800 hover:text-white"
+                  >
+                    Sign In to Dashboard
+                  </Link>
+                </>
+              )}
             </div>
 
             {/* Key Value Metrics */}

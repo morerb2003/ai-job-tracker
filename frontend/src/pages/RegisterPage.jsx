@@ -33,7 +33,7 @@ const RegisterPage = () => {
     mutationFn: (credentials) => register(credentials),
     onSuccess: () => {
       setTimeout(() => {
-        navigate("/");
+        navigate("/dashboard");
       }, 700);
     },
   });
