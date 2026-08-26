@@ -8,29 +8,28 @@ import {
   CheckCircle2,
   Eye,
   EyeOff,
+  KeyRound,
   Loader2,
   Lock,
   Mail,
-  User,
-  UserPlus,
 } from "lucide-react";
 
-import { registerUser } from "../api/authApi";
+import { loginUser } from "../api/authApi";
 
 const initialForm = {
-  name: "",
   email: "",
   password: "",
 };
 
-const RegisterPage = () => {
+const LoginPage = () => {
   const navigate = useNavigate();
   const [form, setForm] = useState(initialForm);
   const [showPassword, setShowPassword] = useState(false);
 
-  const registerMutation = useMutation({
-    mutationFn: registerUser,
+  const loginMutation = useMutation({
+    mutationFn: loginUser,
     onSuccess: (data) => {
+      // Store token in localStorage
       if (data.accessToken) {
         localStorage.setItem("accessToken", data.accessToken);
       }
@@ -50,27 +49,27 @@ const RegisterPage = () => {
       }
       setTimeout(() => {
         navigate("/");
-      }, 900);
+      }, 800);
     },
   });
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-    setForm((currentForm) => ({
-      ...currentForm,
+    setForm((prev) => ({
+      ...prev,
       [name]: value,
     }));
   };
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    registerMutation.mutate(form);
+    loginMutation.mutate(form);
   };
 
   const errorMessage =
-    registerMutation.error?.response?.data?.message ??
-    registerMutation.error?.response?.data?.detail ??
-    registerMutation.error?.message;
+    loginMutation.error?.response?.data?.message ??
+    loginMutation.error?.response?.data?.detail ??
+    loginMutation.error?.message;
 
   return (
     <div className="min-h-screen bg-zinc-950 px-4 py-12 text-zinc-50 flex flex-col justify-center items-center selection:bg-emerald-500 selection:text-zinc-950">
@@ -93,37 +92,17 @@ const RegisterPage = () => {
           </Link>
 
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl text-zinc-100">
-            Create your account
+            Welcome back
           </h1>
           <p className="mt-2 text-sm text-zinc-400">
-            Join JobTracker AI to organize your career search and boost interview conversions
+            Enter your credentials to access your job applications and AI insights
           </p>
         </div>
 
-        {/* Form Card */}
+        {/* Login Form Card */}
         <div className="rounded-2xl border border-zinc-800/80 bg-zinc-900/60 p-6 sm:p-8 shadow-xl shadow-black/40 backdrop-blur-sm">
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Full Name */}
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">
-                Full Name
-              </label>
-              <div className="relative">
-                <User className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
-                <input
-                  type="text"
-                  name="name"
-                  required
-                  maxLength={120}
-                  value={form.name}
-                  onChange={handleChange}
-                  placeholder="Rohit Sharma"
-                  className="w-full rounded-xl border border-zinc-700/80 bg-zinc-950 pl-10 pr-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400"
-                />
-              </div>
-            </div>
-
-            {/* Email Address */}
+            {/* Email Field */}
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">
                 Email Address
@@ -134,31 +113,30 @@ const RegisterPage = () => {
                   type="email"
                   name="email"
                   required
-                  maxLength={255}
                   value={form.email}
                   onChange={handleChange}
-                  placeholder="rohit@example.com"
+                  placeholder="name@example.com"
                   className="w-full rounded-xl border border-zinc-700/80 bg-zinc-950 pl-10 pr-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400"
                 />
               </div>
             </div>
 
-            {/* Password */}
+            {/* Password Field */}
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">
-                Password
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                  Password
+                </label>
+              </div>
               <div className="relative">
                 <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
                 <input
                   type={showPassword ? "text" : "password"}
                   name="password"
                   required
-                  minLength={8}
-                  maxLength={72}
                   value={form.password}
                   onChange={handleChange}
-                  placeholder="Minimum 8 characters"
+                  placeholder="••••••••••••"
                   className="w-full rounded-xl border border-zinc-700/80 bg-zinc-950 pl-10 pr-10 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400"
                 />
                 <button
@@ -174,48 +152,48 @@ const RegisterPage = () => {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={registerMutation.isPending}
+              disabled={loginMutation.isPending}
               className="mt-2 w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-400 py-3 text-sm font-semibold text-zinc-950 shadow-lg shadow-emerald-400/20 transition hover:bg-emerald-300 active:scale-98 disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {registerMutation.isPending ? (
+              {loginMutation.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Creating account...</span>
+                  <span>Signing in...</span>
                 </>
               ) : (
                 <>
-                  <UserPlus className="h-4 w-4" />
-                  <span>Create Account</span>
+                  <KeyRound className="h-4 w-4" />
+                  <span>Sign In</span>
                   <ArrowRight className="h-4 w-4" />
                 </>
               )}
             </button>
 
-            {/* Success Alert */}
-            {registerMutation.isSuccess && (
+            {/* Success Message */}
+            {loginMutation.isSuccess && (
               <div className="flex items-center gap-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-3 text-sm text-emerald-300 animate-in fade-in">
                 <CheckCircle2 className="h-4 w-4 shrink-0" />
-                <span>{registerMutation.data?.message || "Registration successful! Redirecting..."}</span>
+                <span>{loginMutation.data?.message || "Login successful! Redirecting..."}</span>
               </div>
             )}
 
-            {/* Error Alert */}
-            {registerMutation.isError && (
+            {/* Error Message */}
+            {loginMutation.isError && (
               <div className="flex items-center gap-2.5 rounded-xl bg-red-500/10 border border-red-500/20 p-3 text-sm text-red-300 animate-in fade-in">
                 <AlertCircle className="h-4 w-4 shrink-0" />
-                <span>{errorMessage || "Registration failed. Please try again."}</span>
+                <span>{errorMessage || "Invalid email or password"}</span>
               </div>
             )}
           </form>
 
           {/* Footer inside card */}
           <div className="mt-6 border-t border-zinc-800 pt-6 text-center text-xs text-zinc-400">
-            Already have an account?{" "}
+            Don&apos;t have an account yet?{" "}
             <Link
-              to="/login"
+              to="/register"
               className="font-semibold text-emerald-400 hover:text-emerald-300 transition"
             >
-              Sign In
+              Create Account
             </Link>
           </div>
         </div>
@@ -234,4 +212,4 @@ const RegisterPage = () => {
   );
 };
 
-export default RegisterPage;
+export default LoginPage;
