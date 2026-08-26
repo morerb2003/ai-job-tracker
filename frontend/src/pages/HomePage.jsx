@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Activity, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Link } from "react-router-dom";
 
 import { getApiHealth } from "../api/healthApi";
 
@@ -25,6 +26,12 @@ const HomePage = () => {
           <p className="max-w-2xl text-zinc-300">
             Frontend is running. The status panel below checks live communication with the Spring Boot API.
           </p>
+          <Link
+            to="/register"
+            className="inline-flex h-10 items-center rounded-md bg-emerald-400 px-4 text-sm font-medium text-zinc-950 transition hover:bg-emerald-300"
+          >
+            Create Account
+          </Link>
         </section>
 
         <section className="rounded-lg border border-zinc-800 bg-zinc-900 p-5">
