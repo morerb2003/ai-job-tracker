@@ -3,6 +3,7 @@ D:\Fullstack-Project\ai-job-tracker\backend\src\main\java\com\rohit\jobtracker\a
 D:\Fullstack-Project\ai-job-tracker\backend\src\main\java\com\rohit\jobtracker\auth\AuthService.java
 D:\Fullstack-Project\ai-job-tracker\backend\src\main\java\com\rohit\jobtracker\auth\LoginRequest.java
 D:\Fullstack-Project\ai-job-tracker\backend\src\main\java\com\rohit\jobtracker\auth\LoginResponse.java
+D:\Fullstack-Project\ai-job-tracker\backend\src\main\java\com\rohit\jobtracker\auth\LogoutRequest.java
 D:\Fullstack-Project\ai-job-tracker\backend\src\main\java\com\rohit\jobtracker\auth\RefreshToken.java
 D:\Fullstack-Project\ai-job-tracker\backend\src\main\java\com\rohit\jobtracker\auth\RefreshTokenRepository.java
 D:\Fullstack-Project\ai-job-tracker\backend\src\main\java\com\rohit\jobtracker\auth\RefreshTokenRequest.java
@@ -10,6 +11,7 @@ D:\Fullstack-Project\ai-job-tracker\backend\src\main\java\com\rohit\jobtracker\a
 D:\Fullstack-Project\ai-job-tracker\backend\src\main\java\com\rohit\jobtracker\auth\RegisterRequest.java
 D:\Fullstack-Project\ai-job-tracker\backend\src\main\java\com\rohit\jobtracker\auth\TokenRefreshResponse.java
 D:\Fullstack-Project\ai-job-tracker\backend\src\main\java\com\rohit\jobtracker\common\ApiHealthController.java
+D:\Fullstack-Project\ai-job-tracker\backend\src\main\java\com\rohit\jobtracker\common\MessageResponse.java
 D:\Fullstack-Project\ai-job-tracker\backend\src\main\java\com\rohit\jobtracker\config\CorsConfig.java
 D:\Fullstack-Project\ai-job-tracker\backend\src\main\java\com\rohit\jobtracker\config\SecurityConfig.java
 D:\Fullstack-Project\ai-job-tracker\backend\src\main\java\com\rohit\jobtracker\JobtrackerApplication.java

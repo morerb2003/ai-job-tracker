@@ -34,4 +34,9 @@ public class AuthController {
     public TokenRefreshResponse refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
         return authService.refreshToken(request);
     }
+
+    @PostMapping("/logout")
+    public com.rohit.jobtracker.common.MessageResponse logout(@RequestBody(required = false) LogoutRequest request) {
+        return authService.logout(request);
+    }
 }

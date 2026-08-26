@@ -97,6 +97,14 @@ public class AuthService {
                 "Token refreshed successfully");
     }
 
+    @Transactional
+    public com.rohit.jobtracker.common.MessageResponse logout(LogoutRequest request) {
+        if (request != null && request.refreshToken() != null && !request.refreshToken().isBlank()) {
+            refreshTokenService.deleteByToken(request.refreshToken().trim());
+        }
+        return new com.rohit.jobtracker.common.MessageResponse("Logged out successfully");
+    }
+
     private ResponseStatusException invalidCredentials() {
         return new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password");
     }
