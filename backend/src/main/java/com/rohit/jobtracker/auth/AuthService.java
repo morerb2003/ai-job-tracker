@@ -45,6 +45,29 @@ public class AuthService {
                 "Registration successful");
     }
 
+    @Transactional(readOnly = true)
+    public LoginResponse login(LoginRequest request) {
+        String email = normalizeEmail(request.email());
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(this::invalidCredentials);
+
+        if (!passwordEncoder.matches(request.password(), user.getPassword())) {
+            throw invalidCredentials();
+        }
+
+        return new LoginResponse(
+                user.getId(),
+                user.getName(),
+                user.getEmail(),
+                user.getRole(),
+                "Login successful");
+    }
+
+    private ResponseStatusException invalidCredentials() {
+        return new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password");
+    }
+
     private String normalizeEmail(String email) {
         return email.trim().toLowerCase(Locale.ROOT);
     }
