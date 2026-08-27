@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import DashboardLayout from "../layouts/DashboardLayout";
 import AIAnalysisPage from "../pages/AI/AIAnalysisPage";
@@ -7,11 +8,20 @@ import DashboardPage from "../pages/Dashboard/DashboardPage";
 import InterviewsPage from "../pages/Interviews/InterviewsPage";
 import KanbanPage from "../pages/Kanban/KanbanPage";
 import SettingsPage from "../pages/Settings/SettingsPage";
+=======
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import HomePage from "../pages/HomePage";
+import LoginPage from "../pages/LoginPage";
+import RegisterPage from "../pages/RegisterPage";
+import DashboardPage from "../pages/DashboardPage";
+import ProtectedRoute from "../components/ProtectedRoute";
+>>>>>>> feature/authentication
 
 const AppRoutes = () => {
   return (
     <BrowserRouter>
       <Routes>
+<<<<<<< HEAD
         <Route element={<DashboardLayout />}>
           <Route path="/" element={<DashboardPage />} />
           <Route path="/applications" element={<ApplicationsPage />} />
@@ -21,6 +31,24 @@ const AppRoutes = () => {
           <Route path="/analytics" element={<AnalyticsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Route>
+=======
+        <Route path="/" element={<HomePage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        
+        {/* Protected Dashboard Route */}
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <DashboardPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+>>>>>>> feature/authentication
       </Routes>
     </BrowserRouter>
   );
