@@ -3,14 +3,9 @@ import {
   Briefcase,
   Calendar,
   CheckCircle2,
-  Clock,
-  FileText,
-  Kanban,
   LogOut,
-  Plus,
   Shield,
   Sparkles,
-  TrendingUp,
   User,
 } from "lucide-react";
 import { Link } from "react-router-dom";
