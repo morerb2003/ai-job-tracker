@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-D:\Fullstack-Project\ai-job-tracker\backend\src\main\java\com\rohit\jobtracker\JobtrackerApplication.java
-=======
 D:\Fullstack-Project\ai-job-tracker\backend\src\main\java\com\rohit\jobtracker\auth\AuthController.java
 D:\Fullstack-Project\ai-job-tracker\backend\src\main\java\com\rohit\jobtracker\auth\AuthResponse.java
 D:\Fullstack-Project\ai-job-tracker\backend\src\main\java\com\rohit\jobtracker\auth\AuthService.java
@@ -28,4 +25,3 @@ D:\Fullstack-Project\ai-job-tracker\backend\src\main\java\com\rohit\jobtracker\u
 D:\Fullstack-Project\ai-job-tracker\backend\src\main\java\com\rohit\jobtracker\user\UserRepository.java
 D:\Fullstack-Project\ai-job-tracker\backend\src\main\java\com\rohit\jobtracker\user\UserRole.java
 D:\Fullstack-Project\ai-job-tracker\backend\src\main\java\com\rohit\jobtracker\user\UserService.java
->>>>>>> feature/authentication
