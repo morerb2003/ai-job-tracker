@@ -4,3 +4,20 @@ body {
   margin: 0;
   min-height: 100vh;
 }
+
+/* ── Form utility classes used in ApplicationForm and other modals ── */
+@layer components {
+  .form-label {
+    @apply block mb-1.5 text-xs font-medium text-zinc-400 uppercase tracking-wide;
+  }
+
+  .form-input {
+    @apply w-full rounded-xl border border-zinc-800 bg-zinc-900 px-3.5 py-2.5 text-sm text-zinc-200
+           placeholder-zinc-600 outline-none transition
+           focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/30;
+  }
+
+  .form-error {
+    @apply mt-1 text-xs text-red-400;
+  }
+}
