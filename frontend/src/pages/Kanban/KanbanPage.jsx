@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Kanban,
@@ -13,7 +13,6 @@ import {
   Archive,
   Loader2,
   AlertCircle,
-  BriefcaseBusiness,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -21,7 +20,6 @@ import {
   getApplications,
   updateStatus,
   deleteApplication,
-  getApplicationStats,
 } from "../../api/jobApplicationApi";
 import KanbanColumn from "./KanbanColumn";
 import ApplicationForm from "../Applications/ApplicationForm";
@@ -102,11 +100,6 @@ const KanbanPage = () => {
   } = useQuery({
     queryKey: ["applications", { size: 200 }],
     queryFn: () => getApplications({ size: 200, sortBy: "createdAt", sortDir: "desc" }),
-  });
-
-  const { data: statsData } = useQuery({
-    queryKey: ["applicationStats"],
-    queryFn: getApplicationStats,
   });
 
   const applications = useMemo(

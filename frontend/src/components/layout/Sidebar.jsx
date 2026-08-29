@@ -1,4 +1,3 @@
-import React from "react";
 import {
   BarChart3,
   Briefcase,
@@ -8,7 +7,6 @@ import {
   LayoutDashboard,
   LogOut,
   Settings,
-  Sparkles,
   X,
   Compass,
 } from "lucide-react";

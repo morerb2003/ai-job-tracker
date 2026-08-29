@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { X, Loader2 } from "lucide-react";
 import { createApplication, updateApplication } from "../../api/jobApplicationApi";
@@ -26,29 +26,27 @@ const ApplicationForm = ({ application, initialStatus = "SAVED", onClose }) => {
   const queryClient = useQueryClient();
   const isEdit = Boolean(application);
 
-  const [form, setForm] = useState(() => ({
-    ...emptyForm,
-    status: initialStatus,
-  }));
-  const [errors, setErrors] = useState({});
-
-  // Pre-fill form in edit mode
-  useEffect(() => {
-    if (isEdit) {
-      setForm({
-        companyName:    application.companyName    ?? "",
-        jobTitle:       application.jobTitle       ?? "",
-        jobUrl:         application.jobUrl         ?? "",
-        location:       application.location       ?? "",
+  const [form, setForm] = useState(() => {
+    if (application) {
+      return {
+        companyName: application.companyName ?? "",
+        jobTitle: application.jobTitle ?? "",
+        jobUrl: application.jobUrl ?? "",
+        location: application.location ?? "",
         employmentType: application.employmentType ?? "",
-        status:         application.status         ?? "SAVED",
-        salaryMin:      application.salaryMin      ?? "",
-        salaryMax:      application.salaryMax      ?? "",
-        notes:          application.notes          ?? "",
-        appliedAt:      toDateInput(application.appliedAt),
-      });
+        status: application.status ?? "SAVED",
+        salaryMin: application.salaryMin ?? "",
+        salaryMax: application.salaryMax ?? "",
+        notes: application.notes ?? "",
+        appliedAt: toDateInput(application.appliedAt),
+      };
     }
-  }, [application, isEdit]);
+    return {
+      ...emptyForm,
+      status: initialStatus,
+    };
+  });
+  const [errors, setErrors] = useState({});
 
   const handleChange = (e) => {
     const { name, value } = e.target;

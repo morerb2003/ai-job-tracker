@@ -1,4 +1,3 @@
-import React from "react";
 import { Plus } from "lucide-react";
 import KanbanCard from "./KanbanCard";
 
@@ -17,7 +16,7 @@ const KanbanColumn = ({
   onStatusChange,
   onAddApplication,
 }) => {
-  const { id: statusKey, title, dotColor, badgeColor, borderColor, Icon } = column;
+  const { id: statusKey, title, dotColor, badgeColor, Icon } = column;
   const count = applications.length;
 
   return (

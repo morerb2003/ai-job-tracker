@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Plus, Search, Filter, Loader2, AlertCircle,
-  BriefcaseBusiness, ChevronLeft, ChevronRight, LayoutGrid, List
+  BriefcaseBusiness, ChevronLeft, ChevronRight
 } from "lucide-react";
 import {
   getApplications,
