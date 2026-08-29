@@ -22,11 +22,14 @@ const emptyForm = {
 const toIso = (dateStr) => (dateStr ? new Date(dateStr).toISOString() : null);
 const toDateInput = (iso) => (iso ? iso.split("T")[0] : "");
 
-const ApplicationForm = ({ application, onClose }) => {
+const ApplicationForm = ({ application, initialStatus = "SAVED", onClose }) => {
   const queryClient = useQueryClient();
   const isEdit = Boolean(application);
 
-  const [form, setForm] = useState(emptyForm);
+  const [form, setForm] = useState(() => ({
+    ...emptyForm,
+    status: initialStatus,
+  }));
   const [errors, setErrors] = useState({});
 
   // Pre-fill form in edit mode
