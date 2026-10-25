@@ -10,6 +10,7 @@ import SettingsPage from "../pages/Settings/SettingsPage";
 import HomePage from "../pages/HomePage";
 import LoginPage from "../pages/LoginPage";
 import RegisterPage from "../pages/RegisterPage";
+import AdminUsersPage from "../pages/Admin/AdminUsersPage";
 import ProtectedRoute from "../components/ProtectedRoute";
 
 const AppRoutes = () => {
@@ -30,6 +31,12 @@ const AppRoutes = () => {
             <Route path="/interviews" element={<InterviewsPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+          </Route>
+        </Route>
+
+        <Route element={<ProtectedRoute requiredRole="ADMIN" />}>
+          <Route element={<DashboardLayout />}>
+            <Route path="/admin/users" element={<AdminUsersPage />} />
           </Route>
         </Route>
 

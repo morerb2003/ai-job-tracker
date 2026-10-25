@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   LogOut,
   Settings,
+  ShieldCheck,
   X,
   Compass,
 } from "lucide-react";
@@ -21,6 +22,7 @@ const navigationItems = [
   { label: "Interviews", path: "/interviews", icon: Calendar },
   { label: "Analytics", path: "/analytics", icon: BarChart3 },
   { label: "Settings", path: "/settings", icon: Settings },
+  { label: "User administration", path: "/admin/users", icon: ShieldCheck, requiredRole: "ADMIN" },
 ];
 
 const Sidebar = ({ isOpen = false, onClose }) => {
@@ -68,7 +70,9 @@ const Sidebar = ({ isOpen = false, onClose }) => {
               Navigation
             </p>
             <nav className="space-y-1">
-              {navigationItems.map((item) => {
+              {navigationItems
+                .filter((item) => !item.requiredRole || user?.role === item.requiredRole)
+                .map((item) => {
                 const Icon = item.icon;
                 return (
                   <NavLink
@@ -104,7 +108,7 @@ const Sidebar = ({ isOpen = false, onClose }) => {
                     )}
                   </NavLink>
                 );
-              })}
+                })}
             </nav>
           </div>
         </div>

@@ -18,9 +18,12 @@
 
 ## Authorization
 
-- All API routes require authentication unless explicitly listed as public.
-- Routes under `/api/v1/admin/**` require the `ADMIN` role.
-- The frontend's protected route is a navigation guard; backend authorization remains the security boundary.
+- Roles are stored on the user record as `USER` or `ADMIN`. Public registration always creates a `USER`; the client cannot submit a role.
+- The JWT filter loads the user's current role from PostgreSQL on each authenticated request. The API does not trust a role value supplied by the browser or only from a JWT claim.
+- Authenticated non-admin API routes require either `USER` or `ADMIN`. Routes under `/api/v1/admin/**` require `ADMIN`, with both a URL security rule and a method-level guard.
+- `GET /api/v1/admin/users` returns profile fields only and is available through the admin-only frontend route `/admin/users`.
+- The frontend hides admin navigation and shows an access-denied page for other roles. This is a user-interface safeguard; the backend authorization remains the security boundary.
+- There is no self-service role-change API. Provision or remove administrator roles through a controlled operator process, and audit those changes.
 - Application records are scoped to the authenticated user in the service layer.
 
 ## Production configuration
@@ -31,4 +34,4 @@ Flyway migration `V4__secure_refresh_tokens.sql` hashes refresh tokens already s
 
 ## Remaining production work
 
-This module does not yet include email verification, password reset, multi-factor authentication, login rate limiting, account/session management, or immediate revocation of access JWTs. These need an email delivery provider, abuse controls, or a server-side access-token revocation strategy before claiming full production readiness. Production deployment also needs a trusted-origin review, HTTPS, and monitoring for repeated authentication failures.
+This module does not yet include email verification, password reset, multi-factor authentication, login rate limiting, account/session management, or immediate revocation of access JWTs. These need an email delivery provider, abuse controls, or a server-side access-token revocation strategy before claiming full production readiness. Production deployment also needs a trusted-origin review, a documented administrator provisioning procedure, HTTPS, and monitoring for repeated authentication failures.
