@@ -1,6 +1,7 @@
 import axiosClient from "./axiosClient";
 
-const BASE = "/api/v1/applications";
+// axiosClient's base URL already includes /api/v1.
+const BASE = "/applications";
 
 /**
  * Create a new job application.
