@@ -29,8 +29,8 @@ public class RefreshToken {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(nullable = false, unique = true, length = 255)
-    private String token;
+    @Column(name = "token_hash", nullable = false, unique = true, length = 64)
+    private String tokenHash;
 
     @Column(name = "expiry_date", nullable = false)
     private Instant expiryDate;
@@ -45,9 +45,9 @@ public class RefreshToken {
     protected RefreshToken() {
     }
 
-    public RefreshToken(User user, String token, Instant expiryDate) {
+    public RefreshToken(User user, String tokenHash, Instant expiryDate) {
         this.user = user;
-        this.token = token;
+        this.tokenHash = tokenHash;
         this.expiryDate = expiryDate;
         this.revoked = false;
     }
@@ -64,12 +64,12 @@ public class RefreshToken {
         this.user = user;
     }
 
-    public String getToken() {
-        return token;
+    public String getTokenHash() {
+        return tokenHash;
     }
 
-    public void setToken(String token) {
-        this.token = token;
+    public void setTokenHash(String tokenHash) {
+        this.tokenHash = tokenHash;
     }
 
     public Instant getExpiryDate() {

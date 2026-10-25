@@ -25,7 +25,7 @@ public class JwtService {
     private final long jwtExpirationMs;
 
     public JwtService(
-            @Value("${jwt.secret:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}") String secretKey,
+            @Value("${jwt.secret}") String secretKey,
             @Value("${jwt.expiration:900000}") long jwtExpirationMs) {
         this.secretKey = secretKey;
         this.jwtExpirationMs = jwtExpirationMs;

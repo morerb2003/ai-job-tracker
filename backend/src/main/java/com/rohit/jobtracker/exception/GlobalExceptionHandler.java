@@ -6,15 +6,26 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
 
 import jakarta.servlet.http.HttpServletRequest;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<Map<String, Object>> handleResponseStatus(
+            ResponseStatusException ex, HttpServletRequest request) {
+        HttpStatusCode status = ex.getStatusCode();
+        HttpStatus knownStatus = HttpStatus.resolve(status.value());
+        String error = knownStatus == null ? "Request failed" : knownStatus.getReasonPhrase();
+        return buildError(status, error, ex.getReason(), request.getRequestURI());
+    }
 
     /** 404 — resource not found or not owned by the requesting user. */
     @ExceptionHandler(ResourceNotFoundException.class)
@@ -45,10 +56,15 @@ public class GlobalExceptionHandler {
 
     private ResponseEntity<Map<String, Object>> buildError(
             HttpStatus status, String message, String path) {
+        return buildError(status, status.getReasonPhrase(), message, path);
+    }
+
+    private ResponseEntity<Map<String, Object>> buildError(
+            HttpStatusCode status, String error, String message, String path) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("timestamp", Instant.now().toString());
         body.put("status", status.value());
-        body.put("error", status.getReasonPhrase());
+        body.put("error", error);
         body.put("message", message);
         body.put("path", path);
         return ResponseEntity.status(status).body(body);

@@ -14,4 +14,7 @@ public record LoginRequest(
         @Size(max = 72, message = "Password must be 72 characters or fewer")
         String password
 ) {
+    public LoginRequest {
+        email = email == null ? null : email.trim();
+    }
 }

@@ -138,11 +138,11 @@ const RegisterPage = () => {
                   type={showPassword ? "text" : "password"}
                   name="password"
                   required
-                  minLength={8}
+                  minLength={12}
                   maxLength={72}
                   value={form.password}
                   onChange={handleChange}
-                  placeholder="Minimum 8 characters"
+                  placeholder="Minimum 12 characters"
                   className="w-full rounded-xl border border-zinc-700/80 bg-zinc-950 pl-10 pr-10 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400"
                 />
                 <button

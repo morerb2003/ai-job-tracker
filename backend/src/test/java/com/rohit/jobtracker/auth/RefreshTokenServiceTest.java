@@ -1,6 +1,7 @@
 package com.rohit.jobtracker.auth;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -13,6 +14,7 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.rohit.jobtracker.user.User;
@@ -21,7 +23,7 @@ class RefreshTokenServiceTest {
 
     private RefreshTokenRepository repository;
     private RefreshTokenService service;
-    private final long expirationMs = 604800000L; // 7 days
+    private final long expirationMs = 604800000L;
 
     @BeforeEach
     void setUp() {
@@ -30,43 +32,57 @@ class RefreshTokenServiceTest {
     }
 
     @Test
-    void shouldCreateRefreshToken() {
+    void storesOnlyHashOfHighEntropyRefreshToken() {
         User user = new User("Rohit", "rohit@example.com", "hash");
         when(repository.save(any(RefreshToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        RefreshToken token = service.createRefreshToken(user);
+        String rawToken = service.createRefreshToken(user);
 
-        assertNotNull(token);
-        assertNotNull(token.getToken());
-        assertEquals(user, token.getUser());
-        verify(repository).save(any(RefreshToken.class));
+        ArgumentCaptor<RefreshToken> savedToken = ArgumentCaptor.forClass(RefreshToken.class);
+        verify(repository).save(savedToken.capture());
+        assertNotNull(rawToken);
+        assertEquals(43, rawToken.length());
+        assertEquals(64, savedToken.getValue().getTokenHash().length());
+        assertNotEquals(rawToken, savedToken.getValue().getTokenHash());
+        assertEquals(RefreshTokenService.hashToken(rawToken), savedToken.getValue().getTokenHash());
+        assertEquals(user, savedToken.getValue().getUser());
     }
 
     @Test
-    void shouldRotateRefreshTokenSuccessfully() {
+    void rotatesRefreshTokenAndRevokesThePreviousHash() {
         User user = new User("Rohit", "rohit@example.com", "hash");
         String oldRawToken = "old-token-123";
-        RefreshToken existingToken = new RefreshToken(user, oldRawToken, Instant.now().plusSeconds(3600));
+        RefreshToken existingToken = new RefreshToken(
+                user,
+                RefreshTokenService.hashToken(oldRawToken),
+                Instant.now().plusSeconds(3600));
 
-        when(repository.findByToken(oldRawToken)).thenReturn(Optional.of(existingToken));
+        when(repository.findByTokenHash(RefreshTokenService.hashToken(oldRawToken)))
+                .thenReturn(Optional.of(existingToken));
         when(repository.save(any(RefreshToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        RefreshToken rotated = service.rotateRefreshToken(oldRawToken);
+        RotatedRefreshToken rotated = service.rotateRefreshToken(oldRawToken);
 
-        assertNotNull(rotated);
-        verify(repository).delete(existingToken);
+        assertEquals(user, rotated.user());
+        assertNotNull(rotated.rawToken());
+        assertNotEquals(oldRawToken, rotated.rawToken());
+        assertEquals(true, existingToken.isRevoked());
+        verify(repository).save(existingToken);
         verify(repository).save(any(RefreshToken.class));
     }
 
     @Test
-    void shouldRejectExpiredRefreshToken() {
+    void rejectsExpiredRefreshToken() {
         User user = new User("Rohit", "rohit@example.com", "hash");
         String expiredRawToken = "expired-token-123";
-        RefreshToken existingToken = new RefreshToken(user, expiredRawToken, Instant.now().minusSeconds(3600));
+        RefreshToken existingToken = new RefreshToken(
+                user,
+                RefreshTokenService.hashToken(expiredRawToken),
+                Instant.now().minusSeconds(3600));
 
-        when(repository.findByToken(expiredRawToken)).thenReturn(Optional.of(existingToken));
+        when(repository.findByTokenHash(RefreshTokenService.hashToken(expiredRawToken)))
+                .thenReturn(Optional.of(existingToken));
 
         assertThrows(ResponseStatusException.class, () -> service.rotateRefreshToken(expiredRawToken));
-        verify(repository).delete(existingToken);
     }
 }

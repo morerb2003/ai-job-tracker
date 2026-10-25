@@ -4,21 +4,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.Instant;
 import java.util.Optional;
-import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.rohit.jobtracker.common.MessageResponse;
 import com.rohit.jobtracker.security.JwtService;
 import com.rohit.jobtracker.user.User;
 import com.rohit.jobtracker.user.UserRepository;
@@ -37,49 +33,45 @@ class AuthServiceTest {
         passwordEncoder = mock(PasswordEncoder.class);
         jwtService = mock(JwtService.class);
         refreshTokenService = mock(RefreshTokenService.class);
-
         authService = new AuthService(userRepository, passwordEncoder, jwtService, refreshTokenService);
     }
 
     @Test
-    void shouldRegisterUserSuccessfully() {
+    void registrationKeepsRefreshCredentialOutOfResponseBody() {
         RegisterRequest request = new RegisterRequest("Rohit Sharma", "rohit@example.com", "Password@123");
         User user = new User("Rohit Sharma", "rohit@example.com", "encodedHash");
-        RefreshToken refreshToken = new RefreshToken(user, "refresh-123", Instant.now().plusSeconds(3600));
 
         when(userRepository.existsByEmail("rohit@example.com")).thenReturn(false);
         when(passwordEncoder.encode("Password@123")).thenReturn("encodedHash");
         when(userRepository.save(any(User.class))).thenReturn(user);
         when(jwtService.generateToken(user)).thenReturn("access-jwt-token");
         when(jwtService.getExpirationTime()).thenReturn(900000L);
-        when(refreshTokenService.createRefreshToken(user)).thenReturn(refreshToken);
+        when(refreshTokenService.createRefreshToken(user)).thenReturn("opaque-refresh-cookie-value");
 
-        AuthResponse response = authService.register(request);
+        AuthSessionResult<AuthResponse> result = authService.register(request);
 
-        assertNotNull(response);
-        assertEquals("rohit@example.com", response.email());
-        assertEquals("access-jwt-token", response.accessToken());
-        assertEquals("refresh-123", response.refreshToken());
+        assertNotNull(result);
+        assertEquals("rohit@example.com", result.response().email());
+        assertEquals("access-jwt-token", result.response().accessToken());
+        assertEquals("opaque-refresh-cookie-value", result.refreshToken());
     }
 
     @Test
-    void shouldLoginUserSuccessfully() {
+    void loginReturnsAccessTokenAndCookieCredentialSeparately() {
         LoginRequest request = new LoginRequest("rohit@example.com", "Password@123");
         User user = new User("Rohit Sharma", "rohit@example.com", "encodedHash");
-        RefreshToken refreshToken = new RefreshToken(user, "refresh-123", Instant.now().plusSeconds(3600));
 
         when(userRepository.findByEmail("rohit@example.com")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("Password@123", "encodedHash")).thenReturn(true);
         when(jwtService.generateToken(user)).thenReturn("access-jwt-token");
         when(jwtService.getExpirationTime()).thenReturn(900000L);
-        when(refreshTokenService.createRefreshToken(user)).thenReturn(refreshToken);
+        when(refreshTokenService.createRefreshToken(user)).thenReturn("opaque-refresh-cookie-value");
 
-        LoginResponse response = authService.login(request);
+        AuthSessionResult<LoginResponse> result = authService.login(request);
 
-        assertNotNull(response);
-        assertEquals("rohit@example.com", response.email());
-        assertEquals("access-jwt-token", response.accessToken());
-        assertEquals("refresh-123", response.refreshToken());
+        assertEquals("rohit@example.com", result.response().email());
+        assertEquals("access-jwt-token", result.response().accessToken());
+        assertEquals("opaque-refresh-cookie-value", result.refreshToken());
     }
 
     @Test
@@ -94,13 +86,8 @@ class AuthServiceTest {
     }
 
     @Test
-    void shouldLogoutSuccessfullyAndRevokeToken() {
-        LogoutRequest request = new LogoutRequest("refresh-token-to-delete");
-
-        MessageResponse response = authService.logout(request);
-
-        assertNotNull(response);
-        assertEquals("Logged out successfully", response.message());
-        verify(refreshTokenService).deleteByToken("refresh-token-to-delete");
+    void logoutRevokesTheCookieRefreshCredential() {
+        authService.logout("opaque-refresh-cookie-value");
+        verify(refreshTokenService).revokeToken("opaque-refresh-cookie-value");
     }
 }

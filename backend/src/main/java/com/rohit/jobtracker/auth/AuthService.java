@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.rohit.jobtracker.security.JwtService;
@@ -32,7 +33,7 @@ public class AuthService {
     }
 
     @Transactional
-    public AuthResponse register(RegisterRequest request) {
+    public AuthSessionResult<AuthResponse> register(RegisterRequest request) {
         String email = normalizeEmail(request.email());
 
         if (userRepository.existsByEmail(email)) {
@@ -44,23 +45,30 @@ public class AuthService {
                 email,
                 passwordEncoder.encode(request.password()));
 
-        User savedUser = userRepository.save(user);
+        User savedUser;
+        try {
+            savedUser = userRepository.saveAndFlush(user);
+        } catch (DataIntegrityViolationException exception) {
+            // The unique email index remains the final guard against concurrent registrations.
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email is already registered");
+        }
         String accessToken = jwtService.generateToken(savedUser);
-        RefreshToken refreshToken = refreshTokenService.createRefreshToken(savedUser);
+        String refreshToken = refreshTokenService.createRefreshToken(savedUser);
 
-        return new AuthResponse(
+        AuthResponse response = new AuthResponse(
                 savedUser.getId(),
                 savedUser.getName(),
                 savedUser.getEmail(),
                 savedUser.getRole(),
                 accessToken,
-                refreshToken.getToken(),
+                "Bearer",
                 jwtService.getExpirationTime(),
                 "Registration successful");
+        return new AuthSessionResult<>(response, refreshToken);
     }
 
     @Transactional
-    public LoginResponse login(LoginRequest request) {
+    public AuthSessionResult<LoginResponse> login(LoginRequest request) {
         String email = normalizeEmail(request.email());
 
         User user = userRepository.findByEmail(email)
@@ -71,37 +79,36 @@ public class AuthService {
         }
 
         String accessToken = jwtService.generateToken(user);
-        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
+        String refreshToken = refreshTokenService.createRefreshToken(user);
 
-        return new LoginResponse(
+        LoginResponse response = new LoginResponse(
                 user.getId(),
                 user.getName(),
                 user.getEmail(),
                 user.getRole(),
                 accessToken,
-                refreshToken.getToken(),
+                "Bearer",
                 jwtService.getExpirationTime(),
                 "Login successful");
+        return new AuthSessionResult<>(response, refreshToken);
     }
 
     @Transactional
-    public TokenRefreshResponse refreshToken(RefreshTokenRequest request) {
-        RefreshToken rotatedToken = refreshTokenService.rotateRefreshToken(request.refreshToken());
-        User user = rotatedToken.getUser();
+    public AuthSessionResult<TokenRefreshResponse> refreshToken(String rawRefreshToken) {
+        RotatedRefreshToken rotatedToken = refreshTokenService.rotateRefreshToken(rawRefreshToken);
+        User user = rotatedToken.user();
         String newAccessToken = jwtService.generateToken(user);
 
-        return new TokenRefreshResponse(
+        TokenRefreshResponse response = new TokenRefreshResponse(
                 newAccessToken,
-                rotatedToken.getToken(),
                 jwtService.getExpirationTime(),
                 "Token refreshed successfully");
+        return new AuthSessionResult<>(response, rotatedToken.rawToken());
     }
 
     @Transactional
-    public com.rohit.jobtracker.common.MessageResponse logout(LogoutRequest request) {
-        if (request != null && request.refreshToken() != null && !request.refreshToken().isBlank()) {
-            refreshTokenService.deleteByToken(request.refreshToken().trim());
-        }
+    public com.rohit.jobtracker.common.MessageResponse logout(String refreshToken) {
+        refreshTokenService.revokeToken(refreshToken);
         return new com.rohit.jobtracker.common.MessageResponse("Logged out successfully");
     }
 

@@ -1,46 +1,74 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { getCurrentUser, loginUser, logoutUser, registerUser } from "../api/authApi";
+import {
+  clearAccessToken,
+  getAccessToken,
+  refreshAccessToken,
+  setAccessToken,
+} from "../api/authSession";
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem("user");
-    return saved ? JSON.parse(saved) : null;
-  });
-
-  const [accessToken, setAccessToken] = useState(() => localStorage.getItem("accessToken"));
-  const [refreshToken, setRefreshToken] = useState(() => localStorage.getItem("refreshToken"));
+  const [user, setUser] = useState(null);
+  const [accessToken, setAccessTokenState] = useState(getAccessToken);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Initialize and verify authentication
   useEffect(() => {
-    const initAuth = async () => {
-      const storedToken = localStorage.getItem("accessToken");
-      if (storedToken) {
-        try {
-          const profile = await getCurrentUser();
-          setUser(profile);
-          localStorage.setItem("user", JSON.stringify(profile));
-        } catch {
-          // Token expired or invalid, let interceptor or logout handle it
-        }
-      }
-      setIsLoading(false);
+    let isMounted = true;
+
+    const syncToken = (event) => {
+      setAccessTokenState(event.detail ?? getAccessToken());
     };
 
-    initAuth();
+    const clearSession = () => {
+      clearAccessToken();
+      setAccessTokenState(null);
+      setUser(null);
+    };
+
+    const initializeSession = async () => {
+      // Remove tokens saved by the previous localStorage-based auth implementation.
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      localStorage.removeItem("user");
+
+      try {
+        const session = await refreshAccessToken();
+        if (!isMounted) return;
+
+        setAccessTokenState(session.accessToken);
+        const profile = await getCurrentUser();
+        if (isMounted) setUser(profile);
+      } catch {
+        if (isMounted) {
+          clearAccessToken();
+          setAccessTokenState(null);
+          setUser(null);
+        }
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+
+    window.addEventListener("auth:token-changed", syncToken);
+    window.addEventListener("auth:session-expired", clearSession);
+    initializeSession();
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener("auth:token-changed", syncToken);
+      window.removeEventListener("auth:session-expired", clearSession);
+    };
   }, []);
 
   const handleAuthSuccess = (data) => {
-    if (data.accessToken) {
-      setAccessToken(data.accessToken);
-      localStorage.setItem("accessToken", data.accessToken);
+    if (!data.accessToken) {
+      throw new Error("Authentication response did not include an access token.");
     }
-    if (data.refreshToken) {
-      setRefreshToken(data.refreshToken);
-      localStorage.setItem("refreshToken", data.refreshToken);
-    }
+    setAccessToken(data.accessToken);
+    setAccessTokenState(data.accessToken);
+
     const userData = {
       id: data.userId,
       name: data.name,
@@ -48,7 +76,6 @@ export const AuthProvider = ({ children }) => {
       role: data.role,
     };
     setUser(userData);
-    localStorage.setItem("user", JSON.stringify(userData));
     return data;
   };
 
@@ -64,27 +91,20 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      const storedRefreshToken = localStorage.getItem("refreshToken");
-      if (storedRefreshToken) {
-        await logoutUser(storedRefreshToken);
-      }
+      await logoutUser();
     } catch {
-      // Ignore network errors on logout
+      // Always clear the local session, even when the API cannot be reached.
     } finally {
+      clearAccessToken();
+      setAccessTokenState(null);
       setUser(null);
-      setAccessToken(null);
-      setRefreshToken(null);
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken");
-      localStorage.removeItem("user");
     }
   };
 
   const value = {
     user,
     accessToken,
-    refreshToken,
-    isAuthenticated: !!accessToken,
+    isAuthenticated: Boolean(accessToken),
     isLoading,
     login,
     register,

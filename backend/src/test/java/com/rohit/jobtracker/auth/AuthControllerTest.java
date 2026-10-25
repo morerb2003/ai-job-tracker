@@ -4,11 +4,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.UUID;
 
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -19,7 +21,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rohit.jobtracker.common.MessageResponse;
 import com.rohit.jobtracker.user.UserRole;
 
+import jakarta.servlet.http.Cookie;
+
 class AuthControllerTest {
+
+    private static final String REFRESH_COOKIE = "jobtracker_refresh";
 
     private AuthService authService;
     private MockMvc mockMvc;
@@ -28,26 +34,19 @@ class AuthControllerTest {
     @BeforeEach
     void setUp() {
         authService = mock(AuthService.class);
-        AuthController authController = new AuthController(authService);
+        AuthController authController = new AuthController(authService, 604800000L, false, "Lax");
         mockMvc = MockMvcBuilders.standaloneSetup(authController).build();
         objectMapper = new ObjectMapper();
     }
 
     @Test
-    void shouldRegisterUserSuccessfully() throws Exception {
+    void registerReturnsAccessTokenAndSetsHttpOnlyRefreshCookie() throws Exception {
         RegisterRequest request = new RegisterRequest("Rohit Sharma", "rohit@example.com", "Password@123");
         AuthResponse response = new AuthResponse(
-                UUID.randomUUID(),
-                "Rohit Sharma",
-                "rohit@example.com",
-                UserRole.USER,
-                "jwt-access-token",
-                "jwt-refresh-token",
-                900000L,
-                "Registration successful"
-        );
-
-        when(authService.register(any(RegisterRequest.class))).thenReturn(response);
+                UUID.randomUUID(), "Rohit Sharma", "rohit@example.com", UserRole.USER,
+                "jwt-access-token", "Bearer", 900000L, "Registration successful");
+        when(authService.register(any(RegisterRequest.class)))
+                .thenReturn(new AuthSessionResult<>(response, "opaque-refresh-token"));
 
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -55,64 +54,54 @@ class AuthControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.email").value("rohit@example.com"))
                 .andExpect(jsonPath("$.accessToken").value("jwt-access-token"))
-                .andExpect(jsonPath("$.refreshToken").value("jwt-refresh-token"));
+                .andExpect(jsonPath("$.refreshToken").doesNotExist())
+                .andExpect(header().string("Set-Cookie", Matchers.containsString("HttpOnly")))
+                .andExpect(header().string("Set-Cookie", Matchers.containsString("Path=/api/v1/auth")));
     }
 
     @Test
-    void shouldLoginUserSuccessfully() throws Exception {
+    void loginSetsRefreshCookieWithoutReturningItInJson() throws Exception {
         LoginRequest request = new LoginRequest("rohit@example.com", "Password@123");
         LoginResponse response = new LoginResponse(
-                UUID.randomUUID(),
-                "Rohit Sharma",
-                "rohit@example.com",
-                UserRole.USER,
-                "jwt-access-token",
-                "jwt-refresh-token",
-                900000L,
-                "Login successful"
-        );
-
-        when(authService.login(any(LoginRequest.class))).thenReturn(response);
+                UUID.randomUUID(), "Rohit Sharma", "rohit@example.com", UserRole.USER,
+                "jwt-access-token", "Bearer", 900000L, "Login successful");
+        when(authService.login(any(LoginRequest.class)))
+                .thenReturn(new AuthSessionResult<>(response, "opaque-refresh-token"));
 
         mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").value("jwt-access-token"))
-                .andExpect(jsonPath("$.tokenType").value("Bearer"));
+                .andExpect(jsonPath("$.refreshToken").doesNotExist())
+                .andExpect(header().string("Set-Cookie", Matchers.containsString("HttpOnly")));
     }
 
     @Test
-    void shouldRefreshTokenSuccessfully() throws Exception {
-        RefreshTokenRequest request = new RefreshTokenRequest("valid-refresh-token");
+    void refreshRotatesHttpOnlyCookieAndReturnsOnlyAccessToken() throws Exception {
         TokenRefreshResponse response = new TokenRefreshResponse(
-                "new-access-token",
-                "new-rotated-refresh-token",
-                900000L,
-                "Token refreshed successfully"
-        );
-
-        when(authService.refreshToken(any(RefreshTokenRequest.class))).thenReturn(response);
+                "new-access-token", 900000L, "Token refreshed successfully");
+        when(authService.refreshToken("valid-refresh-token"))
+                .thenReturn(new AuthSessionResult<>(response, "new-opaque-refresh-token"));
 
         mockMvc.perform(post("/api/v1/auth/refresh")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .cookie(new Cookie(REFRESH_COOKIE, "valid-refresh-token")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").value("new-access-token"))
-                .andExpect(jsonPath("$.refreshToken").value("new-rotated-refresh-token"));
+                .andExpect(jsonPath("$.refreshToken").doesNotExist())
+                .andExpect(header().string("Set-Cookie", Matchers.containsString("HttpOnly")));
     }
 
     @Test
-    void shouldLogoutUserSuccessfully() throws Exception {
-        LogoutRequest request = new LogoutRequest("refresh-token-to-delete");
+    void logoutRevokesCookieAndExpiresItInBrowser() throws Exception {
         MessageResponse response = new MessageResponse("Logged out successfully");
-
-        when(authService.logout(any(LogoutRequest.class))).thenReturn(response);
+        when(authService.logout("opaque-refresh-token")).thenReturn(response);
 
         mockMvc.perform(post("/api/v1/auth/logout")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .cookie(new Cookie(REFRESH_COOKIE, "opaque-refresh-token")))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("Logged out successfully"));
+                .andExpect(jsonPath("$.message").value("Logged out successfully"))
+                .andExpect(header().string("Set-Cookie", Matchers.containsString("Max-Age=0")))
+                .andExpect(header().string("Set-Cookie", Matchers.containsString("HttpOnly")));
     }
 }

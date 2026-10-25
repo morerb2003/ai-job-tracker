@@ -1,9 +1,11 @@
 import axios from "axios";
+import { getAccessToken, refreshAccessToken } from "./authSession";
 
 const baseURL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080/api/v1";
 
 const axiosClient = axios.create({
   baseURL,
+  withCredentials: true,
   headers: {
     "Content-Type": "application/json",
   },
@@ -12,9 +14,13 @@ const axiosClient = axios.create({
 // Request Interceptor: Attach Access Token
 axiosClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("accessToken");
+    const token = getAccessToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    } else if (typeof config.headers.delete === "function") {
+      config.headers.delete("Authorization");
+    } else {
+      delete config.headers.Authorization;
     }
     return config;
   },
@@ -22,26 +28,12 @@ axiosClient.interceptors.request.use(
 );
 
 // Response Interceptor: Auto Refresh on 401
-let isRefreshing = false;
-let failedQueue = [];
-
-const processQueue = (error, token = null) => {
-  failedQueue.forEach((prom) => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve(token);
-    }
-  });
-  failedQueue = [];
-};
-
 axiosClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    // Skip refresh token logic if error was from auth endpoints or already retried
+    // Auth endpoints use the refresh cookie directly; never retry a retried request.
     if (
       !originalRequest ||
       originalRequest._retry ||
@@ -51,51 +43,15 @@ axiosClient.interceptors.response.use(
     }
 
     if (error.response?.status === 401) {
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        })
-          .then((token) => {
-            originalRequest.headers.Authorization = `Bearer ${token}`;
-            return axiosClient(originalRequest);
-          })
-          .catch((err) => Promise.reject(err));
-      }
-
       originalRequest._retry = true;
-      isRefreshing = true;
-
-      const refreshToken = localStorage.getItem("refreshToken");
-      if (!refreshToken) {
-        isRefreshing = false;
-        return Promise.reject(error);
-      }
 
       try {
-        const response = await axios.post(`${baseURL}/auth/refresh`, {
-          refreshToken,
-        });
-
-        const { accessToken: newAccessToken, refreshToken: newRefreshToken } = response.data;
-
-        localStorage.setItem("accessToken", newAccessToken);
-        if (newRefreshToken) {
-          localStorage.setItem("refreshToken", newRefreshToken);
-        }
-
-        axiosClient.defaults.headers.common.Authorization = `Bearer ${newAccessToken}`;
-        processQueue(null, newAccessToken);
-
-        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+        const { accessToken } = await refreshAccessToken();
+        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return axiosClient(originalRequest);
-      } catch (refreshError) {
-        processQueue(refreshError, null);
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("refreshToken");
-        localStorage.removeItem("user");
-        return Promise.reject(refreshError);
-      } finally {
-        isRefreshing = false;
+      } catch {
+        // Preserve the original 401 so query clients do not retry a failed refresh as a network error.
+        return Promise.reject(error);
       }
     }
 

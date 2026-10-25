@@ -2,6 +2,8 @@ package com.rohit.jobtracker.security;
 
 import java.io.IOException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -18,6 +20,8 @@ import jakarta.servlet.http.HttpServletResponse;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+    private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
@@ -55,8 +59,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
             }
-        } catch (Exception ex) {
-            // Invalid/expired token: do not populate SecurityContext; filter chain handles access control
+        } catch (RuntimeException ex) {
+            // Never log the bearer token or claims; the entry point returns the generic 401 response.
+            log.debug("JWT rejected for {} {} ({})", request.getMethod(), request.getRequestURI(),
+                    ex.getClass().getSimpleName());
         }
 
         filterChain.doFilter(request, response);

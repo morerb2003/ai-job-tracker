@@ -10,7 +10,6 @@ public record AuthResponse(
         String email,
         UserRole role,
         String accessToken,
-        String refreshToken,
         String tokenType,
         long expiresIn,
         String message
@@ -20,19 +19,7 @@ public record AuthResponse(
             String name,
             String email,
             UserRole role,
-            String accessToken,
-            String refreshToken,
-            long expiresIn,
             String message) {
-        this(userId, name, email, role, accessToken, refreshToken, "Bearer", expiresIn, message);
-    }
-
-    public AuthResponse(
-            UUID userId,
-            String name,
-            String email,
-            UserRole role,
-            String message) {
-        this(userId, name, email, role, null, null, null, 0, message);
+        this(userId, name, email, role, null, null, 0, message);
     }
 }
