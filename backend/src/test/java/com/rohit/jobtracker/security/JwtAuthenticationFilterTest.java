@@ -3,6 +3,7 @@ package com.rohit.jobtracker.security;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -76,5 +77,7 @@ class JwtAuthenticationFilterTest {
         verify(filterChain).doFilter(request, response);
         assertNotNull(SecurityContextHolder.getContext().getAuthentication());
         assertEquals(email, SecurityContextHolder.getContext().getAuthentication().getName());
+        assertTrue(SecurityContextHolder.getContext().getAuthentication()
+                .getAuthorities().contains(new SimpleGrantedAuthority("ROLE_USER")));
     }
 }

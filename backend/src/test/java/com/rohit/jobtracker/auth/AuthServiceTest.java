@@ -12,12 +12,14 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.rohit.jobtracker.security.JwtService;
 import com.rohit.jobtracker.user.User;
 import com.rohit.jobtracker.user.UserRepository;
+import com.rohit.jobtracker.user.UserRole;
 
 class AuthServiceTest {
 
@@ -39,21 +41,25 @@ class AuthServiceTest {
     @Test
     void registrationKeepsRefreshCredentialOutOfResponseBody() {
         RegisterRequest request = new RegisterRequest("Rohit Sharma", "rohit@example.com", "Password@123");
-        User user = new User("Rohit Sharma", "rohit@example.com", "encodedHash");
 
         when(userRepository.existsByEmail("rohit@example.com")).thenReturn(false);
         when(passwordEncoder.encode("Password@123")).thenReturn("encodedHash");
-        when(userRepository.save(any(User.class))).thenReturn(user);
-        when(jwtService.generateToken(user)).thenReturn("access-jwt-token");
+        when(userRepository.saveAndFlush(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(jwtService.generateToken(any(User.class))).thenReturn("access-jwt-token");
         when(jwtService.getExpirationTime()).thenReturn(900000L);
-        when(refreshTokenService.createRefreshToken(user)).thenReturn("opaque-refresh-cookie-value");
+        when(refreshTokenService.createRefreshToken(any(User.class))).thenReturn("opaque-refresh-cookie-value");
 
         AuthSessionResult<AuthResponse> result = authService.register(request);
 
         assertNotNull(result);
         assertEquals("rohit@example.com", result.response().email());
+        assertEquals(UserRole.USER, result.response().role());
         assertEquals("access-jwt-token", result.response().accessToken());
         assertEquals("opaque-refresh-cookie-value", result.refreshToken());
+
+        ArgumentCaptor<User> savedUser = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).saveAndFlush(savedUser.capture());
+        assertEquals(UserRole.USER, savedUser.getValue().getRole());
     }
 
     @Test

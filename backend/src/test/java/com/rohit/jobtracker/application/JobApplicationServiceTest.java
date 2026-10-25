@@ -8,23 +8,24 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import com.rohit.jobtracker.application.dto.JobApplicationRequest;
 import com.rohit.jobtracker.application.dto.JobApplicationResponse;
 import com.rohit.jobtracker.exception.ResourceNotFoundException;
 import com.rohit.jobtracker.user.User;
 import com.rohit.jobtracker.user.UserRepository;
-
-import java.util.List;
 
 class JobApplicationServiceTest {
 
@@ -43,6 +44,7 @@ class JobApplicationServiceTest {
         service = new JobApplicationService(applicationRepository, userRepository);
 
         testUser = new User("Test User", TEST_EMAIL, "hashed-password");
+        ReflectionTestUtils.setField(testUser, "id", UUID.randomUUID());
         testApp = new JobApplication(testUser, "Google", "Software Engineer");
 
         when(userRepository.findByEmail(TEST_EMAIL)).thenReturn(Optional.of(testUser));
@@ -62,7 +64,9 @@ class JobApplicationServiceTest {
 
         assertThat(response.companyName()).isEqualTo("Google");
         assertThat(response.jobTitle()).isEqualTo("Software Engineer");
-        verify(applicationRepository).save(any(JobApplication.class));
+        ArgumentCaptor<JobApplication> savedApplication = ArgumentCaptor.forClass(JobApplication.class);
+        verify(applicationRepository).save(savedApplication.capture());
+        assertThat(savedApplication.getValue().getUser()).isSameAs(testUser);
     }
 
     @Test
@@ -76,6 +80,20 @@ class JobApplicationServiceTest {
 
         assertThat(result.getTotalElements()).isEqualTo(1);
         assertThat(result.getContent().get(0).companyName()).isEqualTo("Google");
+        verify(applicationRepository).findByUserId(testUser.getId(), pageable);
+    }
+
+    @Test
+    void search_shouldScopeFilteredResultsToCurrentUser() {
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<JobApplication> page = new PageImpl<>(List.of(testApp), pageable, 1);
+        when(applicationRepository.findByUserIdWithFilters(testUser.getId(), null, "Google", pageable))
+                .thenReturn(page);
+
+        Page<JobApplicationResponse> result = service.search(TEST_EMAIL, "Google", null, pageable);
+
+        assertThat(result.getContent()).hasSize(1);
+        verify(applicationRepository).findByUserIdWithFilters(testUser.getId(), null, "Google", pageable);
     }
 
     @Test
@@ -119,6 +137,21 @@ class JobApplicationServiceTest {
     }
 
     @Test
+    void update_notOwnedByUser_shouldNotSaveApplication() {
+        UUID appId = UUID.randomUUID();
+        JobApplicationRequest request = new JobApplicationRequest(
+                "Other Company", "Other Role", null, null, null,
+                JobApplicationStatus.APPLIED, null, null, null, null);
+        when(applicationRepository.findByIdAndUserId(appId, testUser.getId()))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.update(TEST_EMAIL, appId, request))
+                .isInstanceOf(ResourceNotFoundException.class);
+
+        verify(applicationRepository).findByIdAndUserId(appId, testUser.getId());
+    }
+
+    @Test
     void updateStatus_shouldChangeStatusAndReturn() {
         UUID appId = UUID.randomUUID();
 
@@ -130,6 +163,18 @@ class JobApplicationServiceTest {
 
         assertThat(response.status()).isEqualTo(JobApplicationStatus.INTERVIEWING);
         verify(applicationRepository).save(testApp);
+    }
+
+    @Test
+    void updateStatus_notOwnedByUser_shouldNotSaveApplication() {
+        UUID appId = UUID.randomUUID();
+        when(applicationRepository.findByIdAndUserId(appId, testUser.getId()))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.updateStatus(TEST_EMAIL, appId, JobApplicationStatus.INTERVIEWING))
+                .isInstanceOf(ResourceNotFoundException.class);
+
+        verify(applicationRepository).findByIdAndUserId(appId, testUser.getId());
     }
 
     @Test
@@ -155,6 +200,18 @@ class JobApplicationServiceTest {
     }
 
     @Test
+    void delete_notOwnedByUser_shouldNotDeleteApplication() {
+        UUID appId = UUID.randomUUID();
+        when(applicationRepository.findByIdAndUserId(appId, testUser.getId()))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.delete(TEST_EMAIL, appId))
+                .isInstanceOf(ResourceNotFoundException.class);
+
+        verify(applicationRepository).findByIdAndUserId(appId, testUser.getId());
+    }
+
+    @Test
     void getStats_shouldReturnCountsForAllStatuses() {
         when(applicationRepository.countByUserId(testUser.getId())).thenReturn(5L);
         when(applicationRepository.countByUserIdAndStatus(eq(testUser.getId()), any())).thenReturn(1L);
@@ -166,5 +223,8 @@ class JobApplicationServiceTest {
         assertThat(stats).containsKey("APPLIED");
         assertThat(stats).containsKey("INTERVIEWING");
         assertThat(stats.get("total")).isEqualTo(5L);
+        verify(applicationRepository).countByUserId(testUser.getId());
+        verify(applicationRepository, org.mockito.Mockito.times(JobApplicationStatus.values().length))
+                .countByUserIdAndStatus(eq(testUser.getId()), any());
     }
 }

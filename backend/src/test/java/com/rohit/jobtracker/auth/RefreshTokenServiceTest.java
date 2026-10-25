@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -67,8 +68,13 @@ class RefreshTokenServiceTest {
         assertNotNull(rotated.rawToken());
         assertNotEquals(oldRawToken, rotated.rawToken());
         assertEquals(true, existingToken.isRevoked());
-        verify(repository).save(existingToken);
-        verify(repository).save(any(RefreshToken.class));
+        ArgumentCaptor<RefreshToken> savedTokens = ArgumentCaptor.forClass(RefreshToken.class);
+        verify(repository, times(2)).save(savedTokens.capture());
+        assertEquals(existingToken, savedTokens.getAllValues().get(0));
+        assertEquals(true, savedTokens.getAllValues().get(0).isRevoked());
+        assertNotEquals(
+                RefreshTokenService.hashToken(oldRawToken),
+                savedTokens.getAllValues().get(1).getTokenHash());
     }
 
     @Test

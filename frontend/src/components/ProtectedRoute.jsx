@@ -1,12 +1,19 @@
 import { Link, Navigate, Outlet, useLocation } from "react-router-dom";
 import { Loader2, ShieldAlert } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { getRouteAccess } from "../auth/routeAccess";
 
 const ProtectedRoute = ({ children, requiredRole }) => {
   const { user, isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
+  const access = getRouteAccess({
+    isLoading,
+    isAuthenticated,
+    userRole: user?.role,
+    requiredRole,
+  });
 
-  if (isLoading) {
+  if (access === "loading") {
     return (
       <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center text-zinc-400">
         <Loader2 className="h-8 w-8 animate-spin text-emerald-400 mb-3" />
@@ -15,17 +22,11 @@ const ProtectedRoute = ({ children, requiredRole }) => {
     );
   }
 
-  if (!isAuthenticated) {
+  if (access === "unauthenticated") {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  const allowedRoles = Array.isArray(requiredRole)
-    ? requiredRole
-    : requiredRole
-    ? [requiredRole]
-    : [];
-
-  if (allowedRoles.length > 0 && !allowedRoles.includes(user?.role)) {
+  if (access === "forbidden") {
     return (
       <main className="flex min-h-screen items-center justify-center bg-zinc-950 px-6 text-zinc-100">
         <section className="max-w-md rounded-2xl border border-zinc-800 bg-zinc-900/70 p-8 text-center shadow-xl">

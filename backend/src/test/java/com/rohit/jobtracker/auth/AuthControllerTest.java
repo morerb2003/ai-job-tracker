@@ -14,10 +14,12 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.rohit.jobtracker.common.MessageResponse;
 import com.rohit.jobtracker.user.UserRole;
 
@@ -35,8 +37,11 @@ class AuthControllerTest {
     void setUp() {
         authService = mock(AuthService.class);
         AuthController authController = new AuthController(authService, 604800000L, false, "Lax");
-        mockMvc = MockMvcBuilders.standaloneSetup(authController).build();
-        objectMapper = new ObjectMapper();
+        objectMapper = new ObjectMapper()
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+        mockMvc = MockMvcBuilders.standaloneSetup(authController)
+                .setMessageConverters(new MappingJackson2HttpMessageConverter(objectMapper))
+                .build();
     }
 
     @Test
@@ -57,6 +62,24 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.refreshToken").doesNotExist())
                 .andExpect(header().string("Set-Cookie", Matchers.containsString("HttpOnly")))
                 .andExpect(header().string("Set-Cookie", Matchers.containsString("Path=/api/v1/auth")));
+    }
+
+    @Test
+    void registrationRequestCannotPromoteAccountToAdmin() throws Exception {
+        AuthResponse response = new AuthResponse(
+                UUID.randomUUID(), "Rohit Sharma", "rohit@example.com", UserRole.USER,
+                "jwt-access-token", "Bearer", 900000L, "Registration successful");
+        when(authService.register(any(RegisterRequest.class)))
+                .thenReturn(new AuthSessionResult<>(response, "opaque-refresh-token"));
+
+        mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"Rohit Sharma","email":"rohit@example.com",
+                                 "password":"Password@123","role":"ADMIN"}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.role").value("USER"));
     }
 
     @Test
